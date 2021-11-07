@@ -1,5 +1,5 @@
 # Face-Detector
-A simple face detector svm + hog sliding window approach
+A simple face detector SVM + HOG sliding window approach
 Non Maximum Suppression Per ridurre le bounding box
 
 # Dati Utilizzati:
@@ -8,14 +8,13 @@ Non Maximum Suppression Per ridurre le bounding box
 - not faces 2: natural images 10 classes kaggle
 - not faces 3: dtd texture dataset
 
-
 from the caltech 256 dataset the following classes was removed:
+- religious: buddha, jesuschrist
+- human: faces_easy, human_skeleton, people
+- cartoon: superman, homer-simpson, cartman
 
-religious: buddha, jesuschrist
-human: faces_easy, human_skeleton, people
-cartoon: superman, homer-simpson, cartman
-
-- limitatezza multi scala va tunato meglio
+# limitazioni
+- multi scala va tunato meglio
 - performance non bellissime (tempo calcolo)
 - qualità immagine in input noon deve essere troppo rumorosa o smussata
 - non pensato per riconoscere faccie girate di profilo o di spalle
