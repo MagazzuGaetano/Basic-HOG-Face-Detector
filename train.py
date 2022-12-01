@@ -1,16 +1,12 @@
-import os
-import sys
 import time
-
 import numpy as np
-from numpy import savetxt, loadtxt
+from numpy import savetxt
 import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 from sklearn.svm import SVC
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.svm import LinearSVC
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -18,22 +14,24 @@ from utils import calculate_features
 from utils import load_images_from_folder
 
 import joblib
-import cv2
 
 target_size = (64, 64)
 
 # Load images
-N = 1000 #int(13000 / 8) #quante immagini tenere nel dataset faccie
-M = 4000 #int(26000 / 8) #quante immagini tenere nel dataset di non faccie
-L = int(4000 / 4) #quante immagini tenere nel secondo dataset di non faccie
-K = int(2000 / 4) #quante immagini tenere nel terzo dataset di non faccie
+LWZ_data_path = 'data-path'
+Caltech_256_data_path = 'data-path'
+Natural_images_data_path ='data-path'
+Dtd_texture_data_path ='data-path'
 
-data_path = '/home/lfx/Downloads/Face_Detection/large_dataset'
+N = 1000 #int(13000 / 8) #number of images to keep from the LWZ Dataset
+M = 4000 #int(26000 / 8) #number of images to keep from the Caltech_256 Dataset
+L = int(4000 / 4) #number of images to keep from the Natural_images Dataset
+K = int(2000 / 4) #number of images to keep from the Dtd_texture Dataset
 
-faces = np.asarray(load_images_from_folder(data_path + '/faces', target_size[1], target_size[0], N))[:N]
-not_faces = np.asarray(load_images_from_folder(data_path + '/not_faces', target_size[1], target_size[0], M))[:M]
-#not_faces2 = np.asarray(load_images_from_folder(data_path + '/not_faces(small)', target_size[1], target_size[0]))[:L]
-#not_faces3 = np.asarray(load_images_from_folder(data_path + '/texture', target_size[1], target_size[0]))[:K]
+faces = np.asarray(load_images_from_folder(LWZ_data_path + '/faces', target_size[1], target_size[0], N))[:N]
+not_faces = np.asarray(load_images_from_folder(Caltech_256_data_path, target_size[1], target_size[0], M))[:M]
+#not_faces2 = np.asarray(load_images_from_folder(Natural_images_data_path, target_size[1], target_size[0]))[:L]
+#not_faces3 = np.asarray(load_images_from_folder(Dtd_texture_data_path, target_size[1], target_size[0]))[:K]
 
 
 print(faces.shape)
@@ -43,8 +41,8 @@ print(not_faces.shape)
 
 images = np.concatenate([faces, not_faces]) #not_faces2, not_faces3])
 
-# Label images (N faces and M+L non-faces)
-y = np.array([1] * N + [0] * M) # * (M + L + K))
+# Label images (N faces and M non-faces)
+y = np.array([1] * N + [0] * M)
 
 print("Data Loaded into Memory!")
 
@@ -63,7 +61,7 @@ std_scaler.fit(X)
 X = std_scaler.transform(X)
 print(X.shape)
 
-pca_scaler = PCA(0.95) #n_components=500, svd_solver='full'
+pca_scaler = PCA(0.95)
 pca_scaler.fit(X)
 X = pca_scaler.transform(X)
 

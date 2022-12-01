@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imutils
 
-from skimage.feature import local_binary_pattern  # , hog
+from skimage.feature import local_binary_pattern
 from cyvlfeat.hog import hog
 
 import random

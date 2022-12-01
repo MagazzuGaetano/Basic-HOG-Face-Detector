@@ -4,13 +4,12 @@ import cv2
 import numpy as np
 import os
 
-from utils import resize_with_max_ratio, resize_with_min_ratio
+from utils import resize_with_max_ratio
 from utils import draw_boxes, scale_bbox, NMS
 from utils import calculate_features_image, calculate_features
 from utils import sliding_window
 
 import joblib
-import matplotlib.pyplot as plt
 
 
 
@@ -20,26 +19,6 @@ def visualize_sliding_window(image, box):
     cv2.rectangle(clone, (box[0], box[1]), (box[0] + box[2], box[1] + box[3]), color, 2)
     cv2.imshow("Window", image)
     cv2.waitKey(1)
-    #time.sleep(0.025)
-
-def detect_faces(faces, single_image=False):
-    faces = np.asarray(faces)
-    print(faces.shape)
-
-    if single_image:
-        features = calculate_features_image(faces).reshape(1, -1)
-    else:
-        features = calculate_features(faces)
-
-    # scale features
-    if std_scaler != None:
-        features = std_scaler.transform(features)
-    if pca_scaler != None:
-        features = pca_scaler.transform(features)
-
-    # predict if head or not
-    prob = model.decision_function(features) > 0.3
-    return prob.astype(np.uint32) #model.predict(features)
 
 def pre_process(image):
 
@@ -57,15 +36,7 @@ def pre_process(image):
     image = cv2.copyMakeBorder(image, pad, pad, pad, pad, cv2.BORDER_CONSTANT)
     return image, output, scales
 
-
-
-def main(filename, in_folder, out_folder):
-    image = cv2.imread(os.path.join(in_folder, filename))
-    image, output, scales = pre_process(image)
-
-    t_start = timer()
-    print("starting sliding window ...")
-
+def face_detection(image, scales):
     patches = []
     bounding_boxes = []
 
@@ -91,36 +62,64 @@ def main(filename, in_folder, out_folder):
             bounding_boxes.append(box_rescaled)
             patches.append(window)
 
-        time_classification = timer() - t_start
-        print("sliding window time: {}".format(time_classification))
+    return patches, bounding_boxes
 
+def face_classification(faces, single_image=False, classification_threshold=0.3):
+    faces = np.asarray(faces)
+    print(faces.shape)
 
-    ###########################################################################################
+    if single_image:
+        features = calculate_features_image(faces).reshape(1, -1)
+    else:
+        features = calculate_features(faces)
+
+    # scale features
+    if std_scaler != None:
+        features = std_scaler.transform(features)
+    if pca_scaler != None:
+        features = pca_scaler.transform(features)
+
+    # predict if head or not
+    prob = model.decision_function(features) > classification_threshold
+    return prob.astype(np.uint32) #model.predict(features)
+
+def face_detection_pipeline(image, clf_threshold=0.3, nms_threshold=0.1, out_path=None, write=False):
+    # preprocess the image
+    image, output, scales = pre_process(image)
+
+    t_start = timer()
+    print("starting sliding window ...")
+
+    patches, bounding_boxes = face_detection(image, scales)
+
+    t_end = timer() - t_start
+    print("sliding window time: {}".format(t_end))
 
     t_start = timer()
     print("starting classification of patches ...")
 
-    results = detect_faces(np.asarray(patches))
+    results = face_classification(np.asarray(patches), clf_threshold)
 
-    time_classification = timer() - t_start
-    print("classification took: {}".format(time_classification))
-
-
-###########################################################################################
-
+    t_end = timer() - t_start
+    print("classification took: {}".format(t_end))
 
     # Keep only bounding boxes with faces
     bboxs = [bounding_boxes[i] for i in range(0, len(results)) if results[i] == 1]
     bboxs = np.asarray(bboxs)
 
     # Non Maximum Suppression
-    bboxs, _ = NMS(bboxs, threshold=0.1)
+    bboxs, _ = NMS(bboxs, threshold=nms_threshold)
 
     # Remove padding
     image = image[+8:-8, +8:-8]
 
+    # Draw bounding boxes on faces
     draw_boxes(output, bboxs)
-    cv2.imwrite(os.path.join(out_folder, filename), output)
+
+    if write:
+        cv2.imwrite(out_path, output)
+
+
 
 
 ###########################################################################################
@@ -132,9 +131,12 @@ target_size = (64, 64)
 # load scalers and the model
 std_scaler, pca_scaler, model = joblib.load("model.sav")
 
-in_folder = '/home/lfx/Downloads/archive/wider_train/WIDER_train/images/13--Interview/' #'./test_images/random'
+in_folder = '/home/lfx/Desktop/Recent Projects/Deep Face Detection/test_images/' #'data-path' 
 out_folder = './output'
+
+# apply face detection to multiple images
 for filename in os.listdir(in_folder):
-    main(filename, in_folder, out_folder)
+    image = cv2.imread(os.path.join(in_folder, filename))
+    face_detection_pipeline(image, clf_threshold=0.3, nms_threshold=0.1, out_path=os.path.join(out_folder, filename), write=True) 
 
 ###########################################################################################

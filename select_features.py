@@ -5,9 +5,9 @@ from cyvlfeat.hog import hog
 from utils import calculate_hog, random_crop
 
 
-data_path = "/home/lfx/Downloads/large_dataset/faces/Aaron_Eckhart_0001.ppm"
+image_path = "image-path"
 
-image = cv2.imread(data_path)
+image = cv2.imread(image_path)
 
 print(image.shape)
 
